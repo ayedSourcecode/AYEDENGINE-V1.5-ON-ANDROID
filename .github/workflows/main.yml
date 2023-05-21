@@ -88,5 +88,5 @@ jobs:
       - name: Publish Artifact
         uses: actions/upload-artifact@main
         with:
-          name: buildAndroid
+          name: ANDROIDPORT
           path: export/release/android/bin/app/build/outputs/apk/debug
