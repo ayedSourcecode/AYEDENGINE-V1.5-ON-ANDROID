@@ -25,6 +25,8 @@ using StringTools;
 
 class MainMenuState extends MusicBeatState
 {
+	public static var AyedVersion:String = '1.5.0';
+	public static var AyedEngineVersion:String = '1.5.0'; //This is also used for Discord RPC
 	public static var psychEngineVersion:String = '0.6.3'; //This is also used for Discord RPC
 	public static var curSelected:Int = 0;
 
@@ -35,13 +37,17 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = [
 		'story_mode',
 		'freeplay',
-		#if MODS_ALLOWED 'mods', #end
-		#if ACHIEVEMENTS_ALLOWED 'awards', #end
+		//#if MODS_ALLOWED 'mods', #end
+		//#if ACHIEVEMENTS_ALLOWED 'awards', #end
+		'Discord',
+		//'Youtube',
 		'credits',
-		#if !switch 'donate', #end
-		'options'
+		//#if !switch 'donate', #end
+		'options',
+		'Quit'
 	];
 
+	// var logo:FlxSprite;
 	var magenta:FlxSprite;
 	var camFollow:FlxObject;
 	var camFollowPos:FlxObject;
@@ -49,9 +55,6 @@ class MainMenuState extends MusicBeatState
 
 	override function create()
 	{
-		Paths.clearStoredMemory();
-		Paths.clearUnusedMemory();
-
 		#if MODS_ALLOWED
 		Paths.pushGlobalMods();
 		#end
@@ -62,6 +65,8 @@ class MainMenuState extends MusicBeatState
 		DiscordClient.changePresence("In the Menus", null);
 		#end
 		debugKeys = ClientPrefs.copyKey(ClientPrefs.keyBinds.get('debug_1'));
+		
+		FlxG.mouse.visible = true;
 
 		camGame = new FlxCamera();
 		camAchievement = new FlxCamera();
@@ -75,6 +80,17 @@ class MainMenuState extends MusicBeatState
 		transOut = FlxTransitionableState.defaultTransOut;
 
 		persistentUpdate = persistentDraw = true;
+		
+		// logo = new FlxSprite(500, 0);
+		// logo.frames = Paths.getSparrowAtlas('logoBumpin');
+
+		// logo.antialiasing = ClientPrefs.globalAntialiasing;
+		// logo.animation.addByPrefix('bump', 'logo bumpin', 24, false);
+		// logo.animation.play('bump');
+		// logo.updateHitbox();
+		// logoBl.screenCenter();
+		// logoBl.color = FlxColor.BLACK;
+		// add(logo);
 
 		var yScroll:Float = Math.max(0.25 - (0.05 * (optionShit.length - 4)), 0.1);
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menuBG'));
@@ -121,7 +137,8 @@ class MainMenuState extends MusicBeatState
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');
 			menuItem.ID = i;
-			menuItem.screenCenter(X);
+			menuItem.x = 100;
+			//menuItem.screenCenter(X);
 			menuItems.add(menuItem);
 			var scr:Float = (optionShit.length - 4) * 0.135;
 			if(optionShit.length < 6) scr = 0;
@@ -133,13 +150,19 @@ class MainMenuState extends MusicBeatState
 
 		FlxG.camera.follow(camFollowPos, null, 1);
 
-		var versionShit:FlxText = new FlxText(12, FlxG.height - 44, 0, "Psych Engine v" + psychEngineVersion, 12);
+		var versionShitA:FlxText = new FlxText(12, FlxG.height - 64, 0, "Vs Ayed EDITION V" + AyedVersion, 15);
+		versionShitA.color = 0x4677FF;
+		versionShitA.scrollFactor.set();
+		versionShitA.setFormat("VCR OSD Mono", 16, FlxColor.CYAN, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(versionShitA);
+		var versionShit:FlxText = new FlxText(12, FlxG.height - 44, 0, "Ayed Engine V" + AyedEngineVersion, 12);
+		versionShit.color = 0x1900FF;
 		versionShit.scrollFactor.set();
-		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.CYAN, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 		var versionShit:FlxText = new FlxText(12, FlxG.height - 24, 0, "Friday Night Funkin' v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
-		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.PINK, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
 		// NG.core.calls.event.logEvent('swag').send();
@@ -157,10 +180,6 @@ class MainMenuState extends MusicBeatState
 				ClientPrefs.saveSettings();
 			}
 		}
-		#end
-
-		#if android
-		addVirtualPad(UP_DOWN, A_B_E);
 		#end
 
 		super.create();
@@ -208,12 +227,27 @@ class MainMenuState extends MusicBeatState
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 				MusicBeatState.switchState(new TitleState());
 			}
-
+			if (FlxG.keys.justPressed.F7)
+			{
+				PlayState.SONG = Song.loadFromJson('HELL-ON', 'HELL-ON');
+				PlayState.isStoryMode = false;
+				LoadingState.loadAndSwitchState(new PlayState());
+			}
+			if (FlxG.keys.justPressed.F10)
+			{
+				FlxG.sound.play(Paths.sound('confirmMenu'));
+				MusicBeatState.switchState(new MainMenuUi());
+			}
+			
 			if (controls.ACCEPT)
 			{
-				if (optionShit[curSelected] == 'donate')
+				if (optionShit[curSelected] == 'Discord')
 				{
-					CoolUtil.browserLoad('https://ninja-muffin24.itch.io/funkin');
+					CoolUtil.browserLoad('https://discord.gg/tMAwuMJx');
+				}
+				if (optionShit[curSelected] == 'Quit')
+				{
+					Sys.exit(1);
 				}
 				else
 				{
@@ -236,6 +270,7 @@ class MainMenuState extends MusicBeatState
 						}
 						else
 						{
+							FlxTween.tween(FlxG.camera, {zoom: 2}, 1.6,{ease:FlxEase.expoInOut});
 							FlxFlicker.flicker(spr, 1, 0.06, false, false, function(flick:FlxFlicker)
 							{
 								var daChoice:String = optionShit[curSelected];
@@ -243,6 +278,7 @@ class MainMenuState extends MusicBeatState
 								switch (daChoice)
 								{
 									case 'story_mode':
+										FlxG.sound.music.stop();
 										MusicBeatState.switchState(new StoryMenuState());
 									case 'freeplay':
 										MusicBeatState.switchState(new FreeplayState());
@@ -253,8 +289,10 @@ class MainMenuState extends MusicBeatState
 									case 'awards':
 										MusicBeatState.switchState(new AchievementsMenuState());
 									case 'credits':
+										FlxG.sound.music.stop();
 										MusicBeatState.switchState(new CreditsState());
 									case 'options':
+										FlxG.sound.music.stop();
 										LoadingState.loadAndSwitchState(new options.OptionsState());
 								}
 							});
@@ -262,8 +300,8 @@ class MainMenuState extends MusicBeatState
 					});
 				}
 			}
-			#if (desktop || android)
-			else if (FlxG.keys.anyJustPressed(debugKeys) #if android || _virtualpad.buttonE.justPressed #end)
+			#if desktop
+			else if (FlxG.keys.anyJustPressed(debugKeys))
 			{
 				selectedSomethin = true;
 				MusicBeatState.switchState(new MasterEditorMenu());
@@ -275,7 +313,7 @@ class MainMenuState extends MusicBeatState
 
 		menuItems.forEach(function(spr:FlxSprite)
 		{
-			spr.screenCenter(X);
+			//spr.screenCenter(X);
 		});
 	}
 
